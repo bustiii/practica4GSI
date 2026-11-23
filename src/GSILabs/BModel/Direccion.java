@@ -3,6 +3,7 @@ package GSILabs.BModel;
 import GSILabs.serializable.XMLRepresentable;
 import GSILabs.serializable.XMLUtils;
 import java.io.File;
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
@@ -11,7 +12,12 @@ import java.util.Objects;
  *
  *
  */
-public class Direccion implements XMLRepresentable {
+public class Direccion implements XMLRepresentable, Serializable {
+
+    /**
+     * Version de la forma serializada (la clase viaja por RMI).
+     */
+    private static final long serialVersionUID = 1L;
 
     private String localidad;
     private String provincia;

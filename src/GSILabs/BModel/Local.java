@@ -3,6 +3,9 @@ package GSILabs.BModel;
 import GSILabs.serializable.XMLRepresentable;
 import GSILabs.serializable.XMLUtils;
 import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -16,7 +19,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  *
  */
-public class Local implements XMLRepresentable {
+public class Local implements XMLRepresentable, Serializable {
+
+    /**
+     * Version de la forma serializada (la clase viaja por RMI).
+     */
+    private static final long serialVersionUID = 1L;
 
     /**
      * Longitud maxima de la descripcion.
@@ -241,5 +249,21 @@ public class Local implements XMLRepresentable {
     @Override
     public boolean saveToXML(String filePath) {
         return filePath != null && saveToXML(new File(filePath));
+    }
+
+    /**
+     * Reconstruye el objeto al deserializarlo (por ejemplo, al recibirlo por
+     * RMI). La deserializacion no pasa por los constructores, asi que aqui se
+     * adelanta el generador de identificadores para que los objetos que se
+     * creen despues en esta maquina no repitan el identificador de este
+     * local.
+     *
+     * @param in flujo del que se lee el objeto
+     * @throws IOException si falla la lectura
+     * @throws ClassNotFoundException si no se encuentra alguna clase
+     */
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        SIGUIENTE_ID.accumulateAndGet(id + 1, Math::max);
     }
 }
