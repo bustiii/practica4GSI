@@ -5,6 +5,7 @@ import GSILabs.BModel.Cliente;
 import GSILabs.BModel.Local;
 import GSILabs.BModel.Restaurante;
 import GSILabs.BModel.Review;
+import GSILabs.BModel.Usuario;
 import GSILabs.BSystem.BusinessSystem;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -203,56 +204,82 @@ public class PublicBusinessSystem extends BusinessSystem implements ClientGatewa
 
     // --------------------------------------------------------- AdminGateway
     /**
-     * Elimina un local del sistema.
+     * Elimina un local del sistema. El borrado es en cascada, con la regla de
+     * {@link BusinessSystem#eliminarLocal(Local)}: se eliminan tambien sus
+     * reviews (con sus contestaciones) y sus reservas, y el local se
+     * desvincula de sus propietarios. Asi no quedan reviews de un local que ya
+     * no existe.
      *
-     * @param l local a eliminar
-     * @return true si y solo si se elimino
+     * @param l local a eliminar (mismo tipo y direccion que uno registrado)
+     * @return true si y solo si existia y se elimino
      */
     @Override
     public synchronized Boolean eliminaLocal(Local l) {
-        // TODO issue #4: implementar el borrado
-        return false;
+        Local registrado = localRegistrado(l);
+        return registrado != null && eliminarLocal(registrado);
     }
 
     /**
-     * Elimina todas las reviews de un local y sus contestaciones.
+     * Elimina todas las reviews de un local y sus contestaciones. El local se
+     * mantiene en el sistema.
      *
      * @param l local cuyas reviews se eliminan
-     * @return true si y solo si se completo la tarea
+     * @return true si y solo si el local existe (aunque no tuviera reviews);
+     * false si no esta registrado o es nulo
      */
     @Override
     public synchronized Boolean eliminaReviewsDeLocal(Local l) {
-        // TODO issue #4: implementar el borrado
-        return false;
+        Local registrado = localRegistrado(l);
+        if (registrado == null) {
+            return false;
+        }
+        for (Review r : verReviews(registrado)) {
+            borrarComoAdmin(r);
+        }
+        return true;
     }
 
     /**
      * Elimina una review como administrador, aunque tenga contestacion (que se
-     * elimina con ella).
+     * elimina con ella). La review se busca por su cliente, su local y su
+     * fecha de visita, asi que vale una copia recibida por RMI.
      * <p>
      * Sobrescribe {@link BusinessSystem#eliminaReview(Review)}, que rechaza
      * las reviews contestadas; ese comportamiento sigue disponible para los
      * clientes mediante {@link #quitaReview(Review)}.
      *
      * @param r review a eliminar
-     * @return true si y solo si se elimino
+     * @return true si y solo si existia y se elimino
      */
     @Override
     public synchronized boolean eliminaReview(Review r) {
-        // TODO issue #4: implementar el borrado de administrador
-        return false;
+        return borrarComoAdmin(r);
     }
 
     /**
-     * Elimina todas las reviews de un cliente.
+     * Elimina todas las reviews de un cliente, junto con sus contestaciones.
+     * El cliente se busca por su nick, que es unico; el cliente sigue dado de
+     * alta.
      *
      * @param c cliente cuyas reviews se eliminan
-     * @return numero de reviews eliminadas, o -1 si el cliente no existe
+     * @return numero de reviews eliminadas (0 si no tenia ninguna), o -1 si el
+     * cliente es nulo o no hay ningun cliente registrado con su nick
      */
     @Override
     public synchronized Integer eliminaReviewsDeUsuario(Cliente c) {
-        // TODO issue #4: implementar el borrado
-        return -1;
+        Usuario registrado = (c == null) ? null : obtenerUsuario(c.getNick());
+        if (!(registrado instanceof Cliente)) {
+            return -1;
+        }
+        int borradas = 0;
+        for (Local l : new ArrayList<>(getLocalesRegistrados())) {
+            for (Review r : verReviews(l)) {
+                if (r.getCliente() == registrado.getId() && borrarComoAdmin(r)) {
+                    borradas++;
+                }
+            }
+        }
+        return borradas;
     }
 
     /**
@@ -302,6 +329,22 @@ public class PublicBusinessSystem extends BusinessSystem implements ClientGatewa
      */
     private static String normalizar(String texto) {
         return texto.replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Elimina una review aunque tenga contestacion: primero borra la
+     * contestacion y despues la review, con la regla original de
+     * {@link BusinessSystem#eliminaReview(Review)}.
+     *
+     * @param r review a eliminar
+     * @return true si existia y se elimino
+     */
+    private boolean borrarComoAdmin(Review r) {
+        if (r == null) {
+            return false;
+        }
+        eliminaContestacion(r);
+        return super.eliminaReview(r);
     }
 
     /**
