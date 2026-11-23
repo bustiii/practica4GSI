@@ -303,15 +303,23 @@ public class RemoteConnector<T extends Remote> {
     }
 
     /**
-     * Causa mas concreta de una excepcion remota, para mostrarla al usuario.
+     * Descripcion de una excepcion remota para mostrarla al usuario: el
+     * mensaje de RMI (que indica a que maquina se intento llamar) y la causa
+     * mas concreta.
      */
     private static String causa(RemoteException e) {
         Throwable t = e;
         while (t.getCause() != null && t.getCause() != t) {
             t = t.getCause();
         }
-        String msg = t.getMessage();
-        return t.getClass().getSimpleName() + (msg == null ? "" : ": " + msg);
+        String raiz = t.getClass().getSimpleName() + (t.getMessage() == null ? "" : ": " + t.getMessage());
+        String rmi = e.getMessage();
+        if (rmi == null || t == e) {
+            return raiz;
+        }
+        int i = rmi.indexOf("; nested exception is");
+        rmi = (i >= 0 ? rmi.substring(0, i) : rmi).trim();
+        return rmi.isEmpty() ? raiz : rmi + " / " + raiz;
     }
 
     /**
