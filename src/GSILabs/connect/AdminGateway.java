@@ -38,11 +38,13 @@ public interface AdminGateway extends Remote,LocalFinder{
    
    /**
     * Elimina una review determinada del sistema
+    * Nota del grupo 03: devuelve boolean y no Boolean para no chocar con
+    * LeisureOffice.eliminaReview(Review), que hereda PublicBusinessSystem.
     * @param r Review a eliminar
     * @return True sí y sólo si se pudo completar la tarea
      * @throws RemoteException If some error happens in the remove invocation.
     */
-   public Boolean eliminaReview(Review r) throws RemoteException;
+   public boolean eliminaReview(Review r) throws RemoteException;
    
    /**
     * Elimina todas la reviews de un cliente determinado
