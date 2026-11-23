@@ -6,6 +6,10 @@ import GSILabs.BModel.Local;
 import GSILabs.BModel.Restaurante;
 import GSILabs.BModel.Review;
 import GSILabs.BSystem.BusinessSystem;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Sistema de negocio accesible de forma remota (Practica 4, opcion b del
@@ -34,28 +38,49 @@ public class PublicBusinessSystem extends BusinessSystem implements ClientGatewa
     // ---------------------------------------------------------- LocalFinder
     /**
      * Devuelve el local cuyo nombre coincide exactamente con el indicado, sin
-     * distinguir mayusculas ni espacios.
+     * distinguir mayusculas ni espacios: "Casa  Pepe", "casapepe" y "CASA PEPE"
+     * se consideran el mismo nombre. Si hay varios locales con ese nombre (en
+     * direcciones distintas), devuelve el primero que se dio de alta.
      *
      * @param name nombre del local
-     * @return el local, o null si no existe
+     * @return el local, o null si no existe o el nombre es nulo
      */
     @Override
     public Local getLocal(String name) {
-        // TODO issue #2: implementar la consulta
+        if (name == null) {
+            return null;
+        }
+        String buscado = normalizar(name);
+        for (Local l : getLocalesRegistrados()) {
+            if (normalizar(l.getNombre()).equals(buscado)) {
+                return l;
+            }
+        }
         return null;
     }
 
     /**
      * Devuelve los locales cuyo nombre contiene, total o parcialmente, el
-     * texto indicado, sin distinguir mayusculas ni espacios.
+     * texto indicado, sin distinguir mayusculas ni espacios. Un texto vacio
+     * (o solo con espacios) coincide con todos los locales.
      *
      * @param name nombre completo o parcial
-     * @return los locales encontrados (array vacio si no hay ninguno)
+     * @return los locales encontrados, en orden de alta (array vacio si no hay
+     * ninguno o el texto es nulo)
      */
     @Override
     public Local[] getLocals(String name) {
-        // TODO issue #2: implementar la consulta
-        return null;
+        if (name == null) {
+            return new Local[0];
+        }
+        String buscado = normalizar(name);
+        List<Local> res = new ArrayList<>();
+        for (Local l : getLocalesRegistrados()) {
+            if (normalizar(l.getNombre()).contains(buscado)) {
+                res.add(l);
+            }
+        }
+        return res.toArray(new Local[0]);
     }
 
     // -------------------------------------------------------- ClientGateway
@@ -85,30 +110,41 @@ public class PublicBusinessSystem extends BusinessSystem implements ClientGatewa
     }
 
     /**
-     * Devuelve el bar con mejor puntuacion media de una ciudad.
+     * Devuelve el bar con mejor puntuacion media de una ciudad. La ciudad se
+     * compara sin distinguir mayusculas ni espacios y en cualquier provincia.
+     * Los bares sin reviews quedan por detras de los que tienen alguna; a
+     * igualdad de puntuacion gana el que se dio de alta antes.
      *
      * @param ciudad nombre de la ciudad
-     * @return el mejor bar, o null si la ciudad no tiene bares
+     * @return el mejor bar, o null si la ciudad no tiene bares o es nula
      */
     @Override
     public Bar mejorBar(String ciudad) {
-        // TODO issue #2: implementar la consulta
-        return null;
+        List<Bar> bares = ordenadosPorPuntuacion(Bar.class, ciudad);
+        return bares.isEmpty() ? null : bares.get(0);
     }
 
     /**
      * Devuelve los {@code num} restaurantes de una ciudad con mejor puntuacion
-     * media, ordenados de mejor a peor.
+     * media, ordenados de mejor a peor con el mismo criterio que
+     * {@link #mejorBar(String)}.
      *
      * @param ciudad nombre de la ciudad
      * @param num numero de restaurantes pedidos
      * @return array de tamano {@code num}, con null en las posiciones que no
-     * se puedan cubrir
+     * se puedan cubrir; array vacio si {@code num} es nulo o no es positivo
      */
     @Override
     public Restaurante[] mejoresRestaurantes(String ciudad, Integer num) {
-        // TODO issue #2: implementar la consulta
-        return null;
+        if (num == null || num <= 0) {
+            return new Restaurante[0];
+        }
+        Restaurante[] res = new Restaurante[num];
+        List<Restaurante> ordenados = ordenadosPorPuntuacion(Restaurante.class, ciudad);
+        for (int i = 0; i < res.length && i < ordenados.size(); i++) {
+            res[i] = ordenados.get(i);
+        }
+        return res;
     }
 
     // --------------------------------------------------------- AdminGateway
@@ -177,5 +213,43 @@ public class PublicBusinessSystem extends BusinessSystem implements ClientGatewa
     public Boolean insertaReviewFalsa(Local l, Integer puntuacion) {
         // TODO issue #3: implementar la insercion
         return false;
+    }
+
+    // ------------------------------------------------------------ Auxiliares
+    /**
+     * Normaliza un texto para compararlo sin distinguir mayusculas ni espacios:
+     * elimina todos los espacios en blanco y lo pasa a minusculas.
+     *
+     * @param texto texto a normalizar
+     * @return el texto normalizado
+     */
+    private static String normalizar(String texto) {
+        return texto.replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Locales de un tipo situados en una ciudad, ordenados de mayor a menor
+     * puntuacion media. Los que no tienen reviews van al final y, a igualdad,
+     * se mantiene el orden de alta.
+     *
+     * @param <T> tipo de local
+     * @param tipo clase del tipo de local buscado
+     * @param ciudad ciudad (sin distinguir mayusculas ni espacios)
+     * @return lista ordenada, vacia si no hay ninguno o la ciudad es nula
+     */
+    private <T extends Local> List<T> ordenadosPorPuntuacion(Class<T> tipo, String ciudad) {
+        List<T> res = new ArrayList<>();
+        if (ciudad == null) {
+            return res;
+        }
+        String buscada = normalizar(ciudad);
+        for (Local l : getLocalesRegistrados()) {
+            if (tipo.isInstance(l) && normalizar(l.getUbicacion().getLocalidad()).equals(buscada)) {
+                res.add(tipo.cast(l));
+            }
+        }
+        res.sort(Comparator.comparing((T l) -> verReviews(l).length == 0)
+                .thenComparing(Comparator.comparingDouble((T l) -> obtenerValoracionMedia(l)).reversed()));
+        return res;
     }
 }
