@@ -3,6 +3,9 @@ package GSILabs.BModel;
 import GSILabs.serializable.XMLRepresentable;
 import GSILabs.serializable.XMLUtils;
 import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,7 +17,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  *
  */
-public class Review implements XMLRepresentable {
+public class Review implements XMLRepresentable, Serializable {
+
+    /**
+     * Version de la forma serializada (la clase viaja por RMI).
+     */
+    private static final long serialVersionUID = 1L;
 
     /**
      * Valoracion minima.
@@ -247,5 +255,21 @@ public class Review implements XMLRepresentable {
     @Override
     public boolean saveToXML(String filePath) {
         return filePath != null && saveToXML(new File(filePath));
+    }
+
+    /**
+     * Reconstruye el objeto al deserializarlo (por ejemplo, al recibirlo por
+     * RMI). La deserializacion no pasa por los constructores, asi que aqui se
+     * adelanta el generador de identificadores para que los objetos que se
+     * creen despues en esta maquina no repitan el identificador de esta
+     * review.
+     *
+     * @param in flujo del que se lee el objeto
+     * @throws IOException si falla la lectura
+     * @throws ClassNotFoundException si no se encuentra alguna clase
+     */
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        SIGUIENTE_ID.accumulateAndGet(id + 1, Math::max);
     }
 }

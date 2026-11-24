@@ -12,6 +12,11 @@ import java.time.LocalDate;
 public class Cliente extends Usuario implements XMLRepresentable {
 
     /**
+     * Version de la forma serializada (la clase viaja por RMI).
+     */
+    private static final long serialVersionUID = 1L;
+
+    /**
      * Crea un cliente.
      *
      * @param nick nick unico de al menos 3 caracteres

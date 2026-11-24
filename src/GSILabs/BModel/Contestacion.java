@@ -3,13 +3,19 @@ package GSILabs.BModel;
 import GSILabs.serializable.XMLRepresentable;
 import GSILabs.serializable.XMLUtils;
 import java.io.File;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Objects;
 
 /**
  * Respuesta de un Dueño a una Review de uno de sus locales.
  */
-public class Contestacion implements XMLRepresentable {
+public class Contestacion implements XMLRepresentable, Serializable {
+
+    /**
+     * Version de la forma serializada (la clase viaja por RMI).
+     */
+    private static final long serialVersionUID = 1L;
 
     private String comentario;
     private final LocalDate fecha;

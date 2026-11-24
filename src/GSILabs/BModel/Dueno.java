@@ -15,7 +15,12 @@ import java.util.Set;
  */
 public class Dueno extends Usuario implements XMLRepresentable {
 
-    private final Set<Local> locales;
+    /**
+     * Version de la forma serializada (la clase viaja por RMI).
+     */
+    private static final long serialVersionUID = 1L;
+
+    private final HashSet<Local> locales;
 
     /**
      * Crea un propietario sin locales.

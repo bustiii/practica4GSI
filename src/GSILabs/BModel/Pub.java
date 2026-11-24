@@ -12,6 +12,11 @@ import java.util.Objects;
  */
 public class Pub extends Local implements XMLRepresentable {
 
+    /**
+     * Version de la forma serializada (la clase viaja por RMI).
+     */
+    private static final long serialVersionUID = 1L;
+
     private LocalTime horaClausura;
     private LocalTime horaApertura;
 

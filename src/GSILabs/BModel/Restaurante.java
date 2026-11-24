@@ -11,6 +11,11 @@ import GSILabs.serializable.XMLUtils;
  */
 public class Restaurante extends Local implements Reservable, XMLRepresentable {
 
+    /**
+     * Version de la forma serializada (la clase viaja por RMI).
+     */
+    private static final long serialVersionUID = 1L;
+
     private double precioMenu;
     private int capacidadMesa;
     private int capacidadTotal;

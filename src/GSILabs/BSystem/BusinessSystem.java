@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
@@ -1100,6 +1101,18 @@ public class BusinessSystem implements LeisureOffice, LookupService, XMLRepresen
         }
         reservas.add(r);
         return true;
+    }
+
+    // ------------------------------------------------------------ Subclases
+    /**
+     * Devuelve todos los locales dados de alta, en orden de alta. Lo usan las
+     * subclases que necesitan recorrer los locales sin filtrarlos por ciudad y
+     * provincia (por ejemplo, el acceso remoto de la Practica 4).
+     *
+     * @return vista de solo lectura de los locales registrados
+     */
+    protected List<Local> getLocalesRegistrados() {
+        return Collections.unmodifiableList(locales);
     }
 
     // -------------------------------------------------------------- Privados

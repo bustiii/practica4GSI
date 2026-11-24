@@ -15,7 +15,12 @@ import java.util.Objects;
  */
 public class Bar extends Local implements Reservable, XMLRepresentable {
 
-    private List<String> especialidades;
+    /**
+     * Version de la forma serializada (la clase viaja por RMI).
+     */
+    private static final long serialVersionUID = 1L;
+
+    private ArrayList<String> especialidades;
 
     /**
      * Crea un bar sin especialidades.
